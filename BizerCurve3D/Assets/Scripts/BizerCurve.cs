@@ -30,7 +30,7 @@ public class BizerCurve : MonoBehaviour
     {
         if (null == m_lineRenderer)
             m_lineRenderer = GetComponent<LineRenderer>();
-        m_lineRenderer.material = Resources.Load("Materials/Line") as Material;
+        m_lineRenderer.material = Resources.Load("Materials/LineMaterial") as Material;
         m_lineRenderer.startColor = Color.red;
         m_lineRenderer.endColor = Color.green;
         m_lineRenderer.widthMultiplier = 0.2f;

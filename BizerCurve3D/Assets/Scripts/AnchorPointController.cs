@@ -76,10 +76,15 @@ public class AnchorPointController : CurvePointController
                 {
                     m_lineRenderer = gameObject.AddComponent<LineRenderer>();
                     m_lineRenderer.sortingOrder = 1;
-                    m_lineRenderer.material = new Material(Shader.Find("Legacy Shaders/Particles/Alpha Blended"));
+                    m_lineRenderer.material =  Resources.Load("Materials/LineMaterial") as Material;
+
                     m_lineRenderer.startColor = m_lineRenderer.endColor = Color.yellow;
                     m_lineRenderer.widthMultiplier = 0.03f;
                     m_lineRenderer.positionCount = 0;
+                }
+                if(m_lineRenderer.material == null)
+                {
+                    m_lineRenderer.material = Resources.Load("Materials/LineMaterial") as Material;
                 }
             }
             return m_lineRenderer;
@@ -137,6 +142,12 @@ public class AnchorPointController : CurvePointController
             var dir = p.GetPos() - this.GetPos();
             var dir2 = another.GetPos() - this.GetPos();
             var len = dir2.magnitude;
+            var pos = this.GetPos() - dir.normalized * len;
+            another.transform.position = pos;
+        }else if(m_cType == ContinuousType.C2)
+        {
+            var dir = p.GetPos() - this.GetPos();
+            var len = dir.magnitude;
             var pos = this.GetPos() - dir.normalized * len;
             another.transform.position = pos;
         }

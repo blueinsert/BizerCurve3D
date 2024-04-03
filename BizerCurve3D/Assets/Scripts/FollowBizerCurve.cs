@@ -60,7 +60,9 @@ public class FollowBizerCurve : MonoBehaviour
                 m_curPosition.m_t = 0f;
                 if (m_curPosition.m_segmentIndex >= m_curveSegment)
                 {
-                    m_isMove = false;
+                    //m_isMove = false;
+                    m_curPosition.m_segmentIndex = 0;
+                    m_curPosition.m_t = 0;
                 }
                 else
                 {

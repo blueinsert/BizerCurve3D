@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [ExecuteInEditMode]
-[RequireComponent(typeof(BizerCurve))]
 public class BizerCurveRuntimeEditor : MonoBehaviour
 {
 #if UNITY_EDITOR
@@ -14,7 +13,7 @@ public class BizerCurveRuntimeEditor : MonoBehaviour
 
     private void Awake()
     {
-        m_curve = this.GetComponent<BizerCurve>();
+        m_curve = FindObjectOfType<BizerCurve>();// this.GetComponent<BizerCurve>();
     }
 
     // Use this for initialization
