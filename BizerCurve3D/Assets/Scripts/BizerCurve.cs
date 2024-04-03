@@ -15,7 +15,6 @@ public class BizerCurve : MonoBehaviour
     private int m_curveCount = 0;
     private int SEGMENT_COUNT = 60;//曲线取点个数（取点越多这个长度越趋向于精确）
 
-
     void Awake()
     {
         SetLine();
@@ -59,16 +58,17 @@ public class BizerCurve : MonoBehaviour
         m_curveCount = m_allPoints.Count-1;
         for (int j = 0; j < m_curveCount; j++)
         {
+            int nodeIndex = j;
+            var cur = m_allPoints[nodeIndex];
+            var next = m_allPoints[nodeIndex + 1];
+            var p0 = cur.GetPos();
+            var p1 = cur.m_controlPoint2.GetPos();
+            var p2 = next.m_controlPoint1.GetPos();
+            var p3 = next.GetPos();
+
             for (int i = 1; i <= SEGMENT_COUNT; i++)
             {
                 float t = (float)i / (float)SEGMENT_COUNT;
-                int nodeIndex = j;
-                var cur = m_allPoints[nodeIndex];
-                var next = m_allPoints[nodeIndex + 1];
-                var p0 = cur.GetPos();
-                var p1 = cur.m_controlPoint2.GetPos();
-                var p2 = next.m_controlPoint1.GetPos();
-                var p3 = next.GetPos();
                 Vector3 pixel = CalculateCubicBezierPoint(t, p0,p1,p2,p3);
                 m_lineRenderer.positionCount = j * SEGMENT_COUNT + i;
                 m_lineRenderer.SetPosition((j * SEGMENT_COUNT) + (i - 1), pixel);
@@ -117,8 +117,12 @@ public class BizerCurve : MonoBehaviour
         }
         var lastPoint = m_allPoints[m_allPoints.Count - 1];
         var newAnchorPoint = CreateAnchorPoint(anchorPointPos);
-        lastPoint.CreateControlPoint(m_controlPointPrefab, lastPoint.GetPos() + new Vector3(0, 0, -1),1);
-        newAnchorPoint.CreateControlPoint(m_controlPointPrefab, newAnchorPoint.GetPos() + new Vector3(0, 0, 1),0);
+
+        var controlPointPos = lastPoint.GetPos() + (lastPoint.m_controlPoint1 != null ? -lastPoint.GetControlPointOffset(0) : new Vector3(0, 0, 1));
+        lastPoint.CreateControlPoint(m_controlPointPrefab, controlPointPos, 1);
+        var dir = (anchorPointPos - lastPoint.GetPos()).normalized.normalized;
+        controlPointPos = newAnchorPoint.GetPos() - dir;
+        newAnchorPoint.CreateControlPoint(m_controlPointPrefab, controlPointPos, 0);
 
         m_allPoints.Add(newAnchorPoint);
 
@@ -164,6 +168,86 @@ public class BizerCurve : MonoBehaviour
     }
 
     #endregion
+
+    private void Update()
+    {
+#if UNITY_EDITOR
+        DrawCurve();
+#endif
+    }
+
+    public int GetCurveSegmentCount()
+    {
+        if (m_allPoints.Count < 2) return 0;
+        m_curveCount = m_allPoints.Count - 1;
+        return m_curveCount;
+    }
+
+    public float GetCurveLength()
+    {
+        if (m_allPoints.Count < 2) return 0;
+        m_curveCount = m_allPoints.Count - 1;
+        float len = 0;
+        for (int j = 0; j < m_curveCount; j++)
+        {
+            var curLen = GetCurveLength(j);
+            len += curLen;
+        }
+        return len;
+    }
+
+    public float GetCurveLength(int segmentIndex)
+    {
+        int nodeIndex = segmentIndex;
+        var cur = m_allPoints[nodeIndex];
+        var next = m_allPoints[nodeIndex + 1];
+        var p0 = cur.GetPos();
+        var p1 = cur.m_controlPoint2.GetPos();
+        var p2 = next.m_controlPoint1.GetPos();
+        var p3 = next.GetPos();
+        var curLen = GetCurveLength(p0, p1, p2, p3);
+        return curLen;
+    }
+
+    private float GetCurveLength(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)
+    {
+        var segment = SEGMENT_COUNT*2;
+        float len = 0;
+        for (int i = 1; i <= segment; i++)
+        {
+            float t0 = (float)(i-1) / (float)segment;
+            float t1 = (float)i / (float)segment;
+            
+            Vector3 point0 = CalculateCubicBezierPoint(t0, p0, p1, p2, p3);
+            Vector3 point1 = CalculateCubicBezierPoint(t1, p0, p1, p2, p3);
+            len += (point1 - point0).magnitude;
+        }
+        return len;
+    }
+
+    public Vector3 GetPosition(CurvePosition curvePosition)
+    {
+        int nodeIndex = curvePosition.m_segmentIndex;
+        var cur = m_allPoints[nodeIndex];
+        var next = m_allPoints[nodeIndex + 1];
+        var p0 = cur.GetPos();
+        var p1 = cur.m_controlPoint2.GetPos();
+        var p2 = next.m_controlPoint1.GetPos();
+        var p3 = next.GetPos();
+        var position = CalculateCubicBezierPoint(curvePosition.m_t, p0, p1, p2, p3);
+        return position;
+    }
+
+    public Vector3 GetTangent(CurvePosition curvePosition)
+    {
+        var delta = 0.001f;
+        var pos = new CurvePosition() { m_segmentIndex = curvePosition.m_segmentIndex,m_t = curvePosition.m_t- delta };
+        var p1 = GetPosition(pos);
+        pos.m_t += delta * 2;
+        var p2 = GetPosition(pos);
+        var dir = (p2-p1).normalized;
+        return dir;
+    }
 
     //贝塞尔曲线公式：B(t)=P0*(1-t)^3 + 3*P1*t(1-t)^2 + 3*P2*t^2*(1-t) + P3*t^3 ,t属于[0,1].
     Vector3 CalculateCubicBezierPoint(float t, Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)

@@ -2,8 +2,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum ContinuousType
+{
+    C0,
+    C1,
+    C2,
+}
+
 public class AnchorPointController : CurvePointController
 {
+    public ContinuousType m_cType = ContinuousType.C1;
     public ControlPointController m_controlPoint1;
     public ControlPointController m_controlPoint2;
 
@@ -14,6 +22,21 @@ public class AnchorPointController : CurvePointController
     private void Awake()
     {
         m_curve = GetComponentInParent<BizerCurve>();
+    }
+
+    public Vector3 GetControlPointOffset(int index)
+    {
+        ControlPointController p = null;
+        if (index == 0)
+            p = m_controlPoint1;
+        else if (index == 1)
+            p = m_controlPoint2;
+        if(p != null)
+        {
+            return p.GetPos() - this.GetPos();
+        }
+        Debug.LogError("AnchorPointController:GetControlPointOffset p==null");
+        return Vector3.zero;
     }
 
     public ControlPointController CreateControlPoint(GameObject prefab, Vector3 pos, int index)
@@ -48,9 +71,10 @@ public class AnchorPointController : CurvePointController
         {
             if (gameObject.tag.Equals("AnchorPoint") && !m_lineRenderer)
             {
-                m_lineRenderer = gameObject.AddComponent<LineRenderer>();
-                if (m_lineRenderer)
+                m_lineRenderer = gameObject.GetComponent<LineRenderer>();
+                if (m_lineRenderer == null)
                 {
+                    m_lineRenderer = gameObject.AddComponent<LineRenderer>();
                     m_lineRenderer.sortingOrder = 1;
                     m_lineRenderer.material = new Material(Shader.Find("Legacy Shaders/Particles/Alpha Blended"));
                     m_lineRenderer.startColor = m_lineRenderer.endColor = Color.yellow;
@@ -90,5 +114,31 @@ public class AnchorPointController : CurvePointController
     void Update()
     {
         DrawControlLine();
+    }
+
+    protected override void OnMouseDrag()
+    {
+        base.OnMouseDrag();
+        if (OwnerCurve)
+            OwnerCurve.UpdateLine(gameObject);
+    }
+
+    public void OnControlPointPosChanged(ControlPointController p)
+    {
+        ControlPointController another = null;
+        if (p == m_controlPoint1)
+            another = m_controlPoint2;
+        if (p == m_controlPoint2)
+            another = m_controlPoint1;
+        if (another == null)
+            return;
+        if(m_cType == ContinuousType.C1)
+        {
+            var dir = p.GetPos() - this.GetPos();
+            var dir2 = another.GetPos() - this.GetPos();
+            var len = dir2.magnitude;
+            var pos = this.GetPos() - dir.normalized * len;
+            another.transform.position = pos;
+        }
     }
 }

@@ -13,7 +13,7 @@ public abstract class CurvePointController : MonoBehaviour
 
     private BizerCurve m_curve = null;
 
-    private BizerCurve OwnerCurve
+    protected BizerCurve OwnerCurve
     {
         get
         {
@@ -36,7 +36,7 @@ public abstract class CurvePointController : MonoBehaviour
         if (!gameObject.tag.Equals("AnchorPoint")) return;
     }
 
-    void OnMouseDrag()
+    protected virtual void OnMouseDrag()
     {
         Vector3 pos0 = Camera.main.WorldToScreenPoint(transform.position);
         Vector3 mousePos = new Vector3(Input.mousePosition.x, Input.mousePosition.y, pos0.z);
@@ -49,8 +49,6 @@ public abstract class CurvePointController : MonoBehaviour
         if (m_isLockZ)
             thisPos.z = transform.position.z;
         transform.position = thisPos;
-        if(OwnerCurve)
-            OwnerCurve.UpdateLine(gameObject);
     }
 
     public Vector3 GetPos()
